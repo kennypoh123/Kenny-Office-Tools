@@ -1,0 +1,2 @@
+Ali salary =5000
+Abu Salary =4000
