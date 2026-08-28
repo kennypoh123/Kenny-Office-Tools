@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Salary Calculator</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --bg: #f4f6fb;
+    --card-bg: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --green: #16a34a;
+    --red: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  .container {
+    max-width: 950px;
+    margin: 0 auto;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 4px;
+    font-size: 1.8rem;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 800px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid var(--border);
+  }
+  .card h2 {
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 8px;
+  }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    margin-top: 14px;
+    color: var(--muted);
+  }
+  label:first-of-type { margin-top: 0; }
+  input[type="number"], select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #fafafa;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input[type="number"]:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    background: #fff;
+  }
+  .hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .checkbox-row input { width: auto; }
+  .checkbox-row label { margin: 0; font-size: 0.9rem; }
+  button {
+    width: 100%;
+    padding: 13px;
+    margin-top: 22px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  button:hover { background: var(--primary-dark); }
+
+  .results { margin-top: 20px; }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 0.92rem;
+  }
+  .row.total {
+    font-weight: 700;
+    font-size: 1.15rem;
+    border-bottom: none;
+    border-top: 2px solid var(--text);
+    margin-top: 6px;
+    padding-top: 12px;
+    color: var(--green);
+  }
+  .row .label { color: var(--muted); }
+  .row.deduction .value { color: var(--red); }
+  .section-title {
+    font-weight: 700;
+    margin-top: 16px;
+    margin-bottom: 4px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+  }
+  .placeholder {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 0;
+    font-size: 0.9rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 30px;
+  }
+
+  /* Bulk upload section */
+  .bulk-card {
+    margin-top: 28px;
+  }
+  .upload-box {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    background: #fafbfe;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+  }
+  .upload-box:hover, .upload-box.dragover {
+    border-color: var(--primary);
+    background: #eff4ff;
+  }
+  .upload-box input[type="file"] { display: none; }
+  .upload-icon { font-size: 2rem; margin-bottom: 6px; }
+  .upload-text { font-size: 0.95rem; color: var(--text); font-weight: 600; }
+  .upload-hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+  .file-name-tag {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 5px 12px;
+    background: #e0e7ff;
+    color: var(--primary-dark);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .template-link {
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--primary);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .template-link:hover { text-decoration: underline; }
+
+  .table-wrap {
+    overflow-x: auto;
+    margin-top: 18px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  table.emp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 900px;
+  }
+  table.emp-table th, table.emp-table td {
+    padding: 10px 12px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  table.emp-table th:first-child, table.emp-table td:first-child {
+    text-align: left;
+  }
+  table.emp-table thead th {
+    background: #f1f5f9;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    position: sticky;
+    top: 0;
+  }
+  table.emp-table tbody tr:hover { background: #f9fafb; }
+  table.emp-table td.net { font-weight: 700; color: var(--green); }
+  table.emp-table td.err { color: var(--red); font-style: italic; }
+
+  .bulk-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .bulk-actions button {
+    margin-top: 0;
+    flex: 1;
+    min-width: 180px;
+  }
+  .btn-secondary {
+    background: var(--green) !important;
+  }
+  .btn-secondary:hover { background: #15803d !important; }
+
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  @media (max-width: 700px) {
+    .summary-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+  .stat-box {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-box .num { font-size: 1.15rem; font-weight: 700; color: var(--primary-dark); }
+  .stat-box .lbl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+
+  /* Salary voucher */
+  .voucher-card { margin-top: 28px; }
+  .voucher-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    margin-bottom: 18px;
+  }
+  .voucher-controls > div { flex: 1; min-width: 180px; }
+  .voucher-controls button { margin-top: 0; flex: 0 0 auto; min-width: 160px; }
+
+  .voucher-preview-wrap {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f4f6fb;
+    padding: 20px;
+  }
+  #voucherDoc {
+    background: #fff;
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 32px 36px;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    font-size: 0.88rem;
+    color: #1f2937;
+  }
+  .voucher-header {
+    text-align: center;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .voucher-header h2 {
+    margin: 0 0 4px 0;
+    font-size: 1.3rem;
+    color: var(--primary-dark);
+  }
+  .voucher-header .period { color: var(--muted); font-size: 0.85rem; }
+  .voucher-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 20px;
+    margin-bottom: 18px;
+    font-size: 0.85rem;
+  }
+  .voucher-meta div span.lbl { color: var(--muted); display: inline-block; min-width: 90px; }
+  .voucher-section-title {
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--primary-dark);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+    margin: 16px 0 8px 0;
+  }
+  .voucher-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 0.87rem;
+  }
+  .voucher-row .v-label { color: #374151; }
+  .voucher-row .v-value { font-weight: 600; }
+  .voucher-row.deduct .v-value { color: var(--red); }
+  .voucher-total {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 2px solid var(--text);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--green);
+  }
+  .voucher-footer {
+    margin-top: 24px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  @media print {
+    body * { visibility: hidden; }
+    #voucherDoc, #voucherDoc * { visibility: visible; }
+    #voucherDoc { position: absolute; left: 0; top: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;font-size:0.85rem;">
+    <a href="index.html" style="color:var(--primary);text-decoration:none;font-weight:600;">🗂️ Office Tools</a>
+    <span style="color:var(--muted);">/</span>
+    <span>Salary Calculator</span>
+  </div>
+  <h1>💰 Employee Salary Calculator</h1>
+  <p class="subtitle">Basic salary, overtime, allowances, bonuses &amp; statutory deductions (EPF / SOCSO / EIS)</p>
+
+  <div class="grid">
+    <!-- INPUT CARD -->
+    <div class="card">
+      <h2>Input Details</h2>
+
+      <label for="basicSalary">Basic Monthly Salary (RM)</label>
+      <input type="number" id="basicSalary" placeholder="e.g. 3000" min="0" step="0.01">
+
+      <label for="workingDays">Standard Working Days / Month</label>
+      <input type="number" id="workingDays" value="26" min="1" step="1">
+
+      <div class="section-title">Overtime</div>
+      <label for="otHours">Overtime Hours</label>
+      <input type="number" id="otHours" placeholder="e.g. 10" min="0" step="0.5">
+
+      <label for="otRate">Overtime Rate Multiplier</label>
+      <select id="otRate">
+        <option value="1.5">1.5× (Normal day OT)</option>
+        <option value="2">2× (Rest day OT)</option>
+        <option value="3">3× (Public holiday OT)</option>
+      </select>
+      <div class="hint">Hourly rate = Basic Salary ÷ Working Days ÷ 8 hours</div>
+
+      <div class="section-title">Allowances & Bonus</div>
+      <label for="allowance">Fixed Allowances (RM)</label>
+      <input type="number" id="allowance" placeholder="e.g. 200 (transport, meal, etc.)" min="0" step="0.01">
+
+      <label for="bonus">Bonus / One-off Payment (RM)</label>
+      <input type="number" id="bonus" placeholder="e.g. 500" min="0" step="0.01">
+
+      <div class="section-title">Statutory Deductions</div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="applyStatutory" checked>
+        <label for="applyStatutory">Apply EPF / SOCSO / EIS deductions (Malaysia)</label>
+      </div>
+
+      <label for="epfRate">Employee EPF Rate (%)</label>
+      <input type="number" id="epfRate" value="11" min="0" max="100" step="0.1">
+
+      <label for="socsoAmt">Employee SOCSO (RM, flat)</label>
+      <input type="number" id="socsoAmt" value="19.75" min="0" step="0.01">
+      <div class="hint">Approx. rate per SOCSO Category 1 table — adjust as needed</div>
+
+      <label for="eisAmt">Employee EIS (RM, flat)</label>
+      <input type="number" id="eisAmt" value="7.90" min="0" step="0.01">
+
+      <label for="otherDeduction">Other Deductions (RM)</label>
+      <input type="number" id="otherDeduction" placeholder="e.g. loan, advance" min="0" step="0.01">
+
+      <button onclick="calculateSalary()">Calculate Salary</button>
+    </div>
+
+    <!-- RESULT CARD -->
+    <div class="card">
+      <h2>Payslip Summary</h2>
+      <div id="resultArea">
+        <p class="placeholder">Fill in the details and click "Calculate Salary" to see the breakdown.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BULK UPLOAD CARD -->
+  <div class="card bulk-card">
+    <h2>📊 Bulk Analyse from Excel</h2>
+    <p class="hint" style="margin-bottom:14px;">
+      Upload an Excel file (.xlsx / .xls) with employee data. Expected columns (header row, any order):
+      <strong>Name, Basic Salary, OT Hours, Allowance, Bonus, Deductions</strong>. Optional: <strong>OT Rate, Working Days</strong>.
+    </p>
+
+    <div class="upload-box" id="uploadBox">
+      <input type="file" id="fileInput" accept=".xlsx,.xls">
+      <div class="upload-icon">📁</div>
+      <div class="upload-text">Click to select or drag & drop your Excel file here</div>
+      <div class="upload-hint">.xlsx or .xls — first sheet will be used</div>
+      <div id="fileNameTag"></div>
+    </div>
+    <a class="template-link" id="downloadTemplate">⬇ Download a sample template file</a>
+
+    <div id="bulkResults"></div>
+  </div>
+
+  <!-- SALARY VOUCHER CARD -->
+  <div class="card voucher-card">
+    <h2>🧾 Generate Salary Voucher</h2>
+    <p class="hint" style="margin-bottom:14px;">
+      Pick an employee from your uploaded/calculated results (or use the single calculator above) to generate a printable pay voucher.
+    </p>
+
+    <div class="voucher-controls">
+      <div>
+        <label for="voucherEmployeeSelect" style="margin-top:0;">Employee</label>
+        <select id="voucherEmployeeSelect">
+          <option value="">-- Select employee --</option>
+        </select>
+      </div>
+      <div>
+        <label for="voucherPeriod" style="margin-top:0;">Pay Period</label>
+        <input type="text" id="voucherPeriod" placeholder="e.g. June 2026">
+      </div>
+      <button onclick="generateVoucher()">Generate Voucher</button>
+    </div>
+
+    <div class="voucher-preview-wrap">
+      <div id="voucherDoc">
+        <p class="placeholder">Select an employee and click "Generate Voucher" to preview it here.</p>
+      </div>
+    </div>
+
+    <div class="bulk-actions" id="voucherActionButtons" style="display:none;">
+      <button onclick="downloadVoucherHtml()" class="btn-secondary">⬇ Download Voucher (HTML)</button>
+      <button onclick="window.print()">🖨 Print / Save as PDF</button>
+    </div>
+  </div>
+
+  <footer>Employee Salary Calculator — for reference only, not official payroll advice.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+function fmt(num) {
+  return 'RM ' + num.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function calculateSalary() {
+  const basicSalary = parseFloat(document.getElementById('basicSalary').value) || 0;
+  const workingDays = parseFloat(document.getElementById('workingDays').value) || 26;
+  const otHours = parseFloat(document.getElementById('otHours').value) || 0;
+  const otRate = parseFloat(document.getElementById('otRate').value) || 1.5;
+  const allowance = parseFloat(document.getElementById('allowance').value) || 0;
+  const bonus = parseFloat(document.getElementById('bonus').value) || 0;
+  const otherDeduction = parseFloat(document.getElementById('otherDeduction').value) || 0;
+  const applyStatutory = document.getElementById('applyStatutory').checked;
+  const epfRate = parseFloat(document.getElementById('epfRate').value) || 0;
+  const socsoAmt = parseFloat(document.getElementById('socsoAmt').value) || 0;
+  const eisAmt = parseFloat(document.getElementById('eisAmt').value) || 0;
+
+  if (basicSalary <= 0) {
+    document.getElementById('resultArea').innerHTML =
+      '<p class="placeholder" style="color:#dc2626;">Please enter a valid Basic Salary.</p>';
+    return;
+  }
+
+  // Overtime calculation
+  const hourlyRate = basicSalary / workingDays / 8;
+  const otPay = hourlyRate * otRate * otHours;
+
+  // Gross salary (before statutory deductions)
+  const grossSalary = basicSalary + otPay + allowance + bonus;
+
+  // Statutory deductions (based on basic + allowance, excluding OT/bonus in simplified model)
+  const epfBase = basicSalary + allowance;
+  const epfDeduction = applyStatutory ? epfBase * (epfRate / 100) : 0;
+  const socsoDeduction = applyStatutory ? socsoAmt : 0;
+  const eisDeduction = applyStatutory ? eisAmt : 0;
+
+  const totalDeductions = epfDeduction + socsoDeduction + eisDeduction + otherDeduction;
+  const netSalary = grossSalary - totalDeductions;
+
+  const html = `
+    <div class="results">
+      <div class="section-title">Earnings</div>
+      <div class="row"><span class="label">Basic Salary</span><span class="value">${fmt(basicSalary)}</span></div>
+      <div class="row"><span class="label">Overtime Pay (${otHours} hrs @ ${otRate}×)</span><span class="value">${fmt(otPay)}</span></div>
+      <div class="row"><span class="label">Allowances</span><span class="value">${fmt(allowance)}</span></div>
+      <div class="row"><span class="label">Bonus</span><span class="value">${fmt(bonus)}</span></div>
+      <div class="row"><span class="label"><strong>Gross Salary</strong></span><span class="value"><strong>${fmt(grossSalary)}</strong></span></div>
+
+      <div class="section-title">Deductions</div>
+      <div class="row deduction"><span class="label">EPF (${applyStatutory ? epfRate + '%' : 'not applied'})</span><span class="value">- ${fmt(epfDeduction)}</span></div>
+      <div class="row deduction"><span class="label">SOCSO</span><span class="value">- ${fmt(socsoDeduction)}</span></div>
+      <div class="row deduction"><span class="label">EIS</span><span class="value">- ${fmt(eisDeduction)}</span></div>
+      <div class="row deduction"><span class="label">Other Deductions</span><span class="value">- ${fmt(otherDeduction)}</span></div>
+      <div class="row deduction"><span class="label"><strong>Total Deductions</strong></span><span class="value"><strong>- ${fmt(totalDeductions)}</strong></span></div>
+
+      <div class="row total"><span class="label">Net Salary (Take-home)</span><span class="value">${fmt(netSalary)}</span></div>
+    </div>
+  `;
+
+  document.getElementById('resultArea').innerHTML = html;
+}
+
+/* ===================== BULK EXCEL UPLOAD & ANALYSIS ===================== */
+
+let bulkResultsData = []; // holds calculated results for export
+
+const uploadBox = document.getElementById('uploadBox');
+const fileInput = document.getElementById('fileInput');
+const fileNameTag = document.getElementById('fileNameTag');
+const bulkResultsDiv = document.getElementById('bulkResults');
+
+uploadBox.addEventListener('click', () => fileInput.click());
+
+uploadBox.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadBox.classList.add('dragover');
+});
+uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
+uploadBox.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadBox.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    fileInput.files = e.dataTransfer.files;
+    handleFile(e.dataTransfer.files[0]);
+  }
+});
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  const validExt = /\.(xlsx|xls)$/i.test(file.name);
+  if (!validExt) {
+    bulkResultsDiv.innerHTML = '<p class="placeholder" style="color:#dc2626;">Please upload a valid .xlsx or .xls file.</p>';
+    return;
+  }
+  fileNameTag.innerHTML = `<span class="file-name-tag">📄 ${file.name}</span>`;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      if (!rows.length) {
+        bulkResultsDiv.innerHTML = '<p class="placeholder" style="color:#dc2626;">No data rows found in the uploaded file.</p>';
+        return;
+      }
+      processEmployeeRows(rows);
+    } catch (err) {
+      bulkResultsDiv.innerHTML = `<p class="placeholder" style="color:#dc2626;">Error reading file: ${err.message}</p>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// Flexible column matcher: finds a value from a row regardless of exact header casing/spacing
+function getField(row, candidates) {
+  const keys = Object.keys(row);
+  for (const cand of candidates) {
+    const normCand = cand.toLowerCase().replace(/[\s_-]/g, '');
+    for (const k of keys) {
+      const normKey = k.toLowerCase().replace(/[\s_-]/g, '');
+      if (normKey === normCand) return row[k];
+    }
+  }
+  return undefined;
+}
+
+function toNumber(val, fallback = 0) {
+  const n = parseFloat(val);
+  return isNaN(n) ? fallback : n;
+}
+
+function processEmployeeRows(rows) {
+  bulkResultsData = [];
+  let errorCount = 0;
+
+  // Global settings applied to all rows (from single-entry form defaults)
+  const defaultOtRateSelect = parseFloat(document.getElementById('otRate').value) || 1.5;
+  const defaultWorkingDays = parseFloat(document.getElementById('workingDays').value) || 26;
+  const applyStatutory = document.getElementById('applyStatutory').checked;
+  const epfRate = parseFloat(document.getElementById('epfRate').value) || 0;
+  const socsoAmt = parseFloat(document.getElementById('socsoAmt').value) || 0;
+  const eisAmt = parseFloat(document.getElementById('eisAmt').value) || 0;
+
+  rows.forEach((row, idx) => {
+    const name = getField(row, ['Name', 'Employee Name', 'Employee']) || `Row ${idx + 2}`;
+    const basicSalary = toNumber(getField(row, ['Basic Salary', 'BasicSalary', 'Salary']));
+    const otHours = toNumber(getField(row, ['OT Hours', 'Overtime Hours', 'OT']));
+    const otRate = toNumber(getField(row, ['OT Rate', 'Overtime Rate']), defaultOtRateSelect);
+    const workingDays = toNumber(getField(row, ['Working Days']), defaultWorkingDays);
+    const allowance = toNumber(getField(row, ['Allowance', 'Allowances']));
+    const bonus = toNumber(getField(row, ['Bonus']));
+    const otherDeduction = toNumber(getField(row, ['Deductions', 'Deduction', 'Other Deductions']));
+
+    if (basicSalary <= 0) {
+      bulkResultsData.push({ name, error: 'Missing/invalid Basic Salary' });
+      errorCount++;
+      return;
+    }
+
+    const hourlyRate = basicSalary / workingDays / 8;
+    const otPay = hourlyRate * otRate * otHours;
+    const grossSalary = basicSalary + otPay + allowance + bonus;
+
+    const epfBase = basicSalary + allowance;
+    const epfDeduction = applyStatutory ? epfBase * (epfRate / 100) : 0;
+    const socsoDeduction = applyStatutory ? socsoAmt : 0;
+    const eisDeduction = applyStatutory ? eisAmt : 0;
+
+    const totalDeductions = epfDeduction + socsoDeduction + eisDeduction + otherDeduction;
+    const netSalary = grossSalary - totalDeductions;
+
+    bulkResultsData.push({
+      name, basicSalary, otHours, otRate, otPay, allowance, bonus,
+      grossSalary, epfDeduction, socsoDeduction, eisDeduction,
+      otherDeduction, totalDeductions, netSalary
+    });
+  });
+
+  renderBulkResults(errorCount);
+}
+
+function renderBulkResults(errorCount) {
+  const validRows = bulkResultsData.filter(r => !r.error);
+  const totalGross = validRows.reduce((s, r) => s + r.grossSalary, 0);
+  const totalDeduct = validRows.reduce((s, r) => s + r.totalDeductions, 0);
+  const totalNet = validRows.reduce((s, r) => s + r.netSalary, 0);
+
+  let rowsHtml = '';
+  bulkResultsData.forEach(r => {
+    if (r.error) {
+      rowsHtml += `<tr><td>${r.name}</td><td colspan="9" class="err">⚠ ${r.error}</td></tr>`;
+    } else {
+      rowsHtml += `
+        <tr>
+          <td>${r.name}</td>
+          <td>${fmt(r.basicSalary)}</td>
+          <td>${r.otHours} hrs</td>
+          <td>${fmt(r.otPay)}</td>
+          <td>${fmt(r.allowance)}</td>
+          <td>${fmt(r.bonus)}</td>
+          <td>${fmt(r.grossSalary)}</td>
+          <td>${fmt(r.totalDeductions)}</td>
+          <td class="net">${fmt(r.netSalary)}</td>
+        </tr>`;
+    }
+  });
+
+  const summaryHtml = `
+    <div class="summary-strip">
+      <div class="stat-box"><div class="num">${bulkResultsData.length}</div><div class="lbl">Employees</div></div>
+      <div class="stat-box"><div class="num">${fmt(totalGross)}</div><div class="lbl">Total Gross</div></div>
+      <div class="stat-box"><div class="num">${fmt(totalDeduct)}</div><div class="lbl">Total Deductions</div></div>
+      <div class="stat-box"><div class="num">${fmt(totalNet)}</div><div class="lbl">Total Net Pay</div></div>
+    </div>
+  `;
+
+  const errNote = errorCount > 0
+    ? `<p class="hint" style="color:#dc2626; margin-top:10px;">⚠ ${errorCount} row(s) skipped due to missing/invalid Basic Salary.</p>`
+    : '';
+
+  bulkResultsDiv.innerHTML = `
+    ${summaryHtml}
+    <div class="table-wrap">
+      <table class="emp-table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Basic</th><th>OT Hrs</th><th>OT Pay</th>
+            <th>Allowance</th><th>Bonus</th><th>Gross</th><th>Deductions</th><th>Net Pay</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+    ${errNote}
+    <div class="bulk-actions">
+      <button onclick="downloadResults()" class="btn-secondary">⬇ Download Results as Excel</button>
+    </div>
+  `;
+}
+
+function downloadResults() {
+  const validRows = bulkResultsData.filter(r => !r.error);
+  if (!validRows.length) {
+    alert('No valid calculated data to export.');
+    return;
+  }
+
+  const exportData = validRows.map(r => ({
+    'Name': r.name,
+    'Basic Salary (RM)': +r.basicSalary.toFixed(2),
+    'OT Hours': r.otHours,
+    'OT Rate': r.otRate,
+    'OT Pay (RM)': +r.otPay.toFixed(2),
+    'Allowance (RM)': +r.allowance.toFixed(2),
+    'Bonus (RM)': +r.bonus.toFixed(2),
+    'Gross Salary (RM)': +r.grossSalary.toFixed(2),
+    'EPF (RM)': +r.epfDeduction.toFixed(2),
+    'SOCSO (RM)': +r.socsoDeduction.toFixed(2),
+    'EIS (RM)': +r.eisDeduction.toFixed(2),
+    'Other Deductions (RM)': +r.otherDeduction.toFixed(2),
+    'Total Deductions (RM)': +r.totalDeductions.toFixed(2),
+    'Net Salary (RM)': +r.netSalary.toFixed(2)
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(exportData);
+  ws['!cols'] = Object.keys(exportData[0]).map(() => ({ wch: 16 }));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Salary Results');
+
+  const today = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `Salary_Calculation_Results_${today}.xlsx`);
+}
+
+/* ===================== SALARY VOUCHER GENERATOR ===================== */
+
+const voucherSelect = document.getElementById('voucherEmployeeSelect');
+const voucherDoc = document.getElementById('voucherDoc');
+const voucherActionButtons = document.getElementById('voucherActionButtons');
+
+// Company name, editable at top of file if needed
+const COMPANY_NAME = 'Your Company Sdn Bhd';
+
+// Keep dropdown in sync whenever bulk results are recalculated
+function refreshVoucherEmployeeList() {
+  voucherSelect.innerHTML = '<option value="">-- Select employee --</option>';
+
+  // From bulk upload results
+  bulkResultsData.forEach((r, idx) => {
+    if (!r.error) {
+      const opt = document.createElement('option');
+      opt.value = 'bulk:' + idx;
+      opt.textContent = r.name;
+      voucherSelect.appendChild(opt);
+    }
+  });
+
+  // From single calculator, if it has been run
+  if (window.lastSingleResult) {
+    const opt = document.createElement('option');
+    opt.value = 'single';
+    opt.textContent = '(Single Entry) Current Calculation';
+    voucherSelect.appendChild(opt);
+  }
+}
+
+// Hook into existing renderBulkResults to also refresh the voucher dropdown
+const _origRenderBulkResults = renderBulkResults;
+renderBulkResults = function(errorCount) {
+  _origRenderBulkResults(errorCount);
+  refreshVoucherEmployeeList();
+};
+
+// Hook into single calculator so its result becomes available for the voucher too
+const _origCalculateSalary = calculateSalary;
+calculateSalary = function() {
+  _origCalculateSalary();
+  const basicSalary = parseFloat(document.getElementById('basicSalary').value) || 0;
+  if (basicSalary > 0) {
+    const workingDays = parseFloat(document.getElementById('workingDays').value) || 26;
+    const otHours = parseFloat(document.getElementById('otHours').value) || 0;
+    const otRate = parseFloat(document.getElementById('otRate').value) || 1.5;
+    const allowance = parseFloat(document.getElementById('allowance').value) || 0;
+    const bonus = parseFloat(document.getElementById('bonus').value) || 0;
+    const otherDeduction = parseFloat(document.getElementById('otherDeduction').value) || 0;
+    const applyStatutory = document.getElementById('applyStatutory').checked;
+    const epfRate = parseFloat(document.getElementById('epfRate').value) || 0;
+    const socsoAmt = parseFloat(document.getElementById('socsoAmt').value) || 0;
+    const eisAmt = parseFloat(document.getElementById('eisAmt').value) || 0;
+
+    const hourlyRate = basicSalary / workingDays / 8;
+    const otPay = hourlyRate * otRate * otHours;
+    const grossSalary = basicSalary + otPay + allowance + bonus;
+    const epfBase = basicSalary + allowance;
+    const epfDeduction = applyStatutory ? epfBase * (epfRate / 100) : 0;
+    const socsoDeduction = applyStatutory ? socsoAmt : 0;
+    const eisDeduction = applyStatutory ? eisAmt : 0;
+    const totalDeductions = epfDeduction + socsoDeduction + eisDeduction + otherDeduction;
+    const netSalary = grossSalary - totalDeductions;
+
+    window.lastSingleResult = {
+      name: 'Employee (Single Entry)', basicSalary, otHours, otRate, otPay, allowance, bonus,
+      grossSalary, epfDeduction, socsoDeduction, eisDeduction,
+      otherDeduction, totalDeductions, netSalary
+    };
+    refreshVoucherEmployeeList();
+  }
+};
+
+function generateVoucher() {
+  const selected = voucherSelect.value;
+  if (!selected) {
+    voucherDoc.innerHTML = '<p class="placeholder" style="color:#dc2626;">Please select an employee first.</p>';
+    voucherActionButtons.style.display = 'none';
+    return;
+  }
+
+  let r;
+  if (selected === 'single') {
+    r = window.lastSingleResult;
+  } else if (selected.startsWith('bulk:')) {
+    const idx = parseInt(selected.split(':')[1], 10);
+    r = bulkResultsData[idx];
+  }
+  if (!r) return;
+
+  const period = document.getElementById('voucherPeriod').value || 'Current Period';
+  const today = new Date().toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  voucherDoc.innerHTML = `
+    <div class="voucher-header">
+      <h2>${COMPANY_NAME}</h2>
+      <div class="period">Salary Voucher — ${period}</div>
+    </div>
+
+    <div class="voucher-meta">
+      <div><span class="lbl">Employee Name:</span> <strong>${r.name}</strong></div>
+      <div><span class="lbl">Date Issued:</span> ${today}</div>
+      <div><span class="lbl">Pay Period:</span> ${period}</div>
+      <div><span class="lbl">Payment Mode:</span> Bank Transfer</div>
+    </div>
+
+    <div class="voucher-section-title">Earnings</div>
+    <div class="voucher-row"><span class="v-label">Basic Salary</span><span class="v-value">${fmt(r.basicSalary)}</span></div>
+    <div class="voucher-row"><span class="v-label">Overtime Pay (${r.otHours || 0} hrs @ ${r.otRate || 1.5}×)</span><span class="v-value">${fmt(r.otPay || 0)}</span></div>
+    <div class="voucher-row"><span class="v-label">Allowances</span><span class="v-value">${fmt(r.allowance || 0)}</span></div>
+    <div class="voucher-row"><span class="v-label">Bonus</span><span class="v-value">${fmt(r.bonus || 0)}</span></div>
+    <div class="voucher-row" style="font-weight:700; border-top:1px solid #e5e7eb; margin-top:6px; padding-top:8px;">
+      <span class="v-label">Gross Salary</span><span class="v-value">${fmt(r.grossSalary)}</span>
+    </div>
+
+    <div class="voucher-section-title">Deductions</div>
+    <div class="voucher-row deduct"><span class="v-label">EPF</span><span class="v-value">- ${fmt(r.epfDeduction || 0)}</span></div>
+    <div class="voucher-row deduct"><span class="v-label">SOCSO</span><span class="v-value">- ${fmt(r.socsoDeduction || 0)}</span></div>
+    <div class="voucher-row deduct"><span class="v-label">EIS</span><span class="v-value">- ${fmt(r.eisDeduction || 0)}</span></div>
+    <div class="voucher-row deduct"><span class="v-label">Other Deductions</span><span class="v-value">- ${fmt(r.otherDeduction || 0)}</span></div>
+    <div class="voucher-row deduct" style="font-weight:700; border-top:1px solid #e5e7eb; margin-top:6px; padding-top:8px;">
+      <span class="v-label">Total Deductions</span><span class="v-value">- ${fmt(r.totalDeductions || 0)}</span>
+    </div>
+
+    <div class="voucher-total">
+      <span>Net Pay</span>
+      <span>${fmt(r.netSalary)}</span>
+    </div>
+
+    <div class="voucher-footer">
+      This is a computer-generated document and does not require a signature.<br>
+      Generated on ${today} — for reference only, not an official payroll record.
+    </div>
+  `;
+
+  voucherActionButtons.style.display = 'flex';
+  window._currentVoucherHtml = voucherDoc.innerHTML;
+}
+
+function downloadVoucherHtml() {
+  if (!window._currentVoucherHtml) return;
+  const fullHtml = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Salary Voucher</title>
+<style>
+body{font-family:'Segoe UI',Roboto,Arial,sans-serif;background:#f4f6fb;padding:24px;}
+#voucherDoc{background:#fff;max-width:620px;margin:0 auto;padding:32px 36px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08);font-size:0.88rem;color:#1f2937;}
+.voucher-header{text-align:center;border-bottom:2px solid #2563eb;padding-bottom:14px;margin-bottom:18px;}
+.voucher-header h2{margin:0 0 4px 0;font-size:1.3rem;color:#1d4ed8;}
+.voucher-header .period{color:#6b7280;font-size:0.85rem;}
+.voucher-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:18px;font-size:0.85rem;}
+.voucher-meta div span.lbl{color:#6b7280;display:inline-block;min-width:90px;}
+.voucher-section-title{font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.03em;color:#1d4ed8;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin:16px 0 8px 0;}
+.voucher-row{display:flex;justify-content:space-between;padding:5px 0;font-size:0.87rem;}
+.voucher-row .v-label{color:#374151;}
+.voucher-row .v-value{font-weight:600;}
+.voucher-row.deduct .v-value{color:#dc2626;}
+.voucher-total{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:2px solid #1f2937;font-size:1.05rem;font-weight:800;color:#16a34a;}
+.voucher-footer{margin-top:24px;padding-top:14px;border-top:1px dashed #e5e7eb;font-size:0.72rem;color:#6b7280;text-align:center;}
+</style></head><body><div id="voucherDoc">${window._currentVoucherHtml}</div></body></html>`;
+
+  const blob = new Blob([fullHtml], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const empName = voucherSelect.options[voucherSelect.selectedIndex].textContent.replace(/[^a-z0-9]/gi, '_');
+  a.href = url;
+  a.download = `Salary_Voucher_${empName}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* Sample template download */
+document.getElementById('downloadTemplate').addEventListener('click', () => {
+  const sampleData = [
+    { 'Name': 'Ahmad bin Ali', 'Basic Salary': 3000, 'OT Hours': 10, 'Allowance': 200, 'Bonus': 0, 'Deductions': 0 },
+    { 'Name': 'Siti Nurhaliza', 'Basic Salary': 3500, 'OT Hours': 5, 'Allowance': 150, 'Bonus': 300, 'Deductions': 50 },
+    { 'Name': 'Kenny Poh', 'Basic Salary': 4200, 'OT Hours': 0, 'Allowance': 300, 'Bonus': 0, 'Deductions': 0 }
+  ];
+  const ws = XLSX.utils.json_to_sheet(sampleData);
+  ws['!cols'] = [{wch:18},{wch:14},{wch:10},{wch:12},{wch:10},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Employee Data');
+  XLSX.writeFile(wb, 'Salary_Template.xlsx');
+});
+</script>
+</body>
+</html>
