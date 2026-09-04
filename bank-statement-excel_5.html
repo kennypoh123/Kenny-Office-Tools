@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bank Statement to Excel</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --bg: #f4f6fb;
+    --card-bg: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --green: #16a34a;
+    --red: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  .container { max-width: 1150px; margin: 0 auto; }
+  h1 { text-align: center; margin-bottom: 4px; font-size: 1.8rem; }
+  .subtitle { text-align: center; color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+  .upload-box {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 28px;
+    text-align: center;
+    background: #fafbfe;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+  }
+  .upload-box:hover, .upload-box.dragover {
+    border-color: var(--primary);
+    background: #eff4ff;
+  }
+  .upload-box input[type="file"] { display: none; }
+  .upload-icon { font-size: 2.2rem; margin-bottom: 6px; }
+  .upload-text { font-size: 0.95rem; color: var(--text); font-weight: 600; }
+  .upload-hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+  .file-name-tag {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 5px 12px;
+    background: #e0e7ff;
+    color: var(--primary-dark);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .status { font-size: 0.85rem; margin-top: 12px; }
+  .status.err { color: var(--red); }
+  .status.ok { color: var(--green); }
+
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  @media (max-width: 700px) { .summary-strip { grid-template-columns: repeat(2, 1fr); } }
+  .stat-box {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-box .num { font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); }
+  .stat-box .lbl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+
+  .table-wrap {
+    overflow-x: auto;
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    max-height: 560px;
+    overflow-y: auto;
+  }
+  table.tx-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    min-width: 1000px;
+  }
+  table.tx-table th, table.tx-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  table.tx-table td.num, table.tx-table th.num { text-align: right; white-space: nowrap; }
+  table.tx-table thead th {
+    background: #f1f5f9;
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  table.tx-table tbody tr:hover { background: #f9fafb; }
+  table.tx-table input, table.tx-table select {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 0.82rem;
+    font-family: inherit;
+    padding: 3px 4px;
+    border-radius: 4px;
+  }
+  table.tx-table input:focus, table.tx-table select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #fff;
+  }
+  table.tx-table .remark-cell select { color: var(--primary-dark); font-weight: 600; }
+  .row-remove {
+    background: none;
+    border: none;
+    color: var(--red);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+  }
+
+  .placeholder { text-align: center; color: var(--muted); padding: 30px 0; font-size: 0.9rem; }
+
+  .actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  .actions button {
+    flex: 1;
+    min-width: 180px;
+    padding: 12px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .actions button:hover { background: var(--primary-dark); }
+  .actions button.secondary { background: var(--green); }
+  .actions button.secondary:hover { background: #15803d; }
+  .actions button.ghost { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+  .actions button.ghost:hover { background: #eff4ff; }
+  .actions button:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  .rules-toggle {
+    font-size: 0.8rem;
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 600;
+    border: none;
+    background: none;
+  }
+  .rules-panel { display: none; margin-top: 14px; }
+  .rules-panel.open { display: block; }
+  .rules-panel textarea {
+    width: 100%;
+    min-height: 220px;
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 0.8rem;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    resize: vertical;
+  }
+  .rules-panel .hint { margin-bottom: 8px; }
+  .rules-actions { display: flex; gap: 10px; margin-top: 10px; }
+  .rules-actions button {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .rules-actions button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  td.sel-cell { text-align: center; width: 34px; }
+  td.sel-cell input[type="checkbox"] { width: auto; }
+
+  .voucher-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    margin-bottom: 18px;
+  }
+  .voucher-controls > div { flex: 1; min-width: 170px; }
+  .voucher-controls label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .voucher-controls input, .voucher-controls select {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: #fafafa;
+  }
+  .voucher-controls input:focus, .voucher-controls select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #fff;
+  }
+  .voucher-controls button.gen-btn {
+    flex: 0 0 auto;
+    min-width: 170px;
+    padding: 10px 16px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .voucher-controls button.gen-btn:hover { background: var(--primary-dark); }
+
+  .voucher-preview-wrap {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f4f6fb;
+    padding: 20px;
+  }
+  #voucherDoc {
+    background: #fff;
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 32px 36px;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    font-size: 0.88rem;
+    color: #1f2937;
+  }
+  .voucher-header { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 14px; margin-bottom: 18px; }
+  .voucher-header h2 { margin: 0 0 4px 0; font-size: 1.3rem; color: var(--primary-dark); }
+  .voucher-header .period { color: var(--muted); font-size: 0.85rem; }
+  .voucher-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; margin-bottom: 18px; font-size: 0.85rem; }
+  .voucher-meta div span.lbl { color: var(--muted); display: inline-block; min-width: 100px; }
+  .voucher-section-title {
+    font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--primary-dark); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin: 16px 0 8px 0;
+  }
+  .voucher-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.87rem; gap: 12px; }
+  .voucher-row .v-label { color: #374151; }
+  .voucher-row .v-value { font-weight: 600; white-space: nowrap; }
+  .voucher-total {
+    display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px;
+    border-top: 2px solid var(--text); font-size: 1.05rem; font-weight: 800; color: var(--red);
+  }
+  .voucher-sign-row { display: flex; justify-content: space-between; margin-top: 34px; gap: 20px; }
+  .voucher-sign-box { flex: 1; text-align: center; font-size: 0.8rem; color: var(--muted); }
+  .voucher-sign-box .line { border-top: 1px solid #9ca3af; margin-bottom: 6px; padding-top: 26px; }
+  .voucher-footer {
+    margin-top: 24px; padding-top: 14px; border-top: 1px dashed var(--border);
+    font-size: 0.72rem; color: var(--muted); text-align: center;
+  }
+  @media print {
+    body * { visibility: hidden; }
+    #voucherDoc, #voucherDoc * { visibility: visible; }
+    #voucherDoc { position: absolute; left: 0; top: 0; box-shadow: none; }
+  }
+
+  table.li-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-top: 4px;
+  }
+  table.li-table th, table.li-table td {
+    padding: 8px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  table.li-table th {
+    background: #f1f5f9;
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  table.li-table td.num, table.li-table th.num { text-align: right; }
+  table.li-table input {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 0.82rem;
+    font-family: inherit;
+    padding: 4px 5px;
+    border-radius: 4px;
+  }
+  table.li-table input:focus { outline: none; border-color: var(--primary); background: #fff; }
+  table.li-table tfoot td { font-weight: 700; border-bottom: none; border-top: 2px solid var(--text); }
+
+  footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;font-size:0.85rem;">
+    <a href="index.html" style="color:var(--primary);text-decoration:none;font-weight:600;">🗂️ Office Tools</a>
+    <span style="color:var(--muted);">/</span>
+    <span>Bank Statement to Excel</span>
+  </div>
+  <h1>📊 Bank Statement to Excel</h1>
+  <p class="subtitle">Upload a PDF bank statement &mdash; extract every transaction, auto-label each one with a Remark category, and export to Excel</p>
+
+  <div class="card">
+    <h2>1. Upload Statement (PDF)</h2>
+    <div class="upload-box" id="uploadBox">
+      <input type="file" id="fileInput" accept=".pdf">
+      <div class="upload-icon">📁</div>
+      <div class="upload-text">Click to select or drag &amp; drop a PDF bank statement</div>
+      <div class="upload-hint">Text-based PDF statements work best (e.g. Hong Leong Bank current account style). Scanned/image-only PDFs may not extract cleanly.</div>
+      <div id="fileNameTag"></div>
+    </div>
+    <div id="statusArea"></div>
+    <div class="summary-strip" id="summaryStrip" style="display:none;"></div>
+  </div>
+
+  <div class="card">
+    <h2>
+      <span>2. Review Transactions &amp; Remarks</span>
+      <button class="rules-toggle" onclick="toggleRules()">⚙ Manage Remark Rules</button>
+    </h2>
+    <div class="rules-panel" id="rulesPanel">
+      <p class="hint">One rule per line, format: <code>keyword = Category label</code>. Rules are checked top to bottom &mdash; the first keyword found in a transaction's description wins. Edit, add, or remove rules, then click "Re-apply to Table".</p>
+      <textarea id="rulesText"></textarea>
+      <div class="rules-actions">
+        <button class="primary" onclick="reapplyRules()">↻ Re-apply to Table</button>
+        <button onclick="resetRules()">Reset to Default Rules</button>
+      </div>
+    </div>
+
+    <div id="tableWrap">
+      <p class="placeholder">Upload a PDF above to extract its transactions here.</p>
+    </div>
+
+    <div class="actions" id="reviewActions" style="display:none;">
+      <button class="ghost" onclick="addBlankRow()">＋ Add Row</button>
+      <button class="secondary" onclick="downloadExcel()">⬇ Download as Excel (.xlsx)</button>
+      <button onclick="downloadCsv()">⬇ Download as CSV</button>
+    </div>
+    <p class="hint" id="selectHint" style="display:none; margin-top:10px;">☑ Tick the checkbox on one or more rows above, then generate a payment voucher or save to the database below.</p>
+  </div>
+
+  <div class="card">
+    <h2>💾 Save to Database</h2>
+    <p class="hint" style="margin-bottom:12px;">Sends only the <strong>Date</strong> and <strong>Description</strong> of the selected rows to your Railway PostgreSQL database via the small API in <code>bank-statement-api/</code>. Paste your Railway API URL once &mdash; it's remembered in this browser.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+      <div style="flex:1; min-width:260px;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--muted); margin-bottom:4px;" for="apiUrlInput">Railway API URL</label>
+        <input type="text" id="apiUrlInput" placeholder="https://your-service.up.railway.app" style="width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:8px; font-size:0.9rem; background:#fafafa;">
+      </div>
+      <button class="gen-btn" style="min-width:170px;" onclick="saveTicked()">💾 Save Ticked Rows</button>
+      <button class="gen-btn" style="min-width:170px; background:#fff; color:var(--primary); border:1px solid var(--primary);" onclick="saveAllRows()">💾 Save All Rows</button>
+    </div>
+    <div id="dbStatusArea"></div>
+  </div>
+
+  <div class="card" id="voucherCard" style="display:none;">
+    <h2>3. Generate Payment Voucher</h2>
+    <p class="hint" style="margin-bottom:14px;">Builds a printable payment voucher from the transaction(s) you ticked above &mdash; useful for multiple invoice lines paid to the same payee.</p>
+
+    <div class="voucher-controls">
+      <div>
+        <label for="companyName">Company Name</label>
+        <input type="text" id="companyName" value="Your Company Sdn Bhd">
+      </div>
+      <div>
+        <label for="voucherPayee">Payee / Vendor</label>
+        <input type="text" id="voucherPayee" placeholder="e.g. Ban Lee Vegetables Sdn. Bhd.">
+      </div>
+      <div>
+        <label for="voucherPurpose">Purpose / Description</label>
+        <input type="text" id="voucherPurpose" placeholder="e.g. Payment for vegetable supplies">
+      </div>
+      <div>
+        <label for="voucherDate">Voucher Date</label>
+        <input type="date" id="voucherDate">
+      </div>
+      <div>
+        <label for="voucherMode">Payment Mode</label>
+        <select id="voucherMode">
+          <option>Bank Transfer</option>
+          <option>Cheque</option>
+          <option>Cash</option>
+          <option>Online Banking</option>
+        </select>
+      </div>
+      <div>
+        <label for="preparedBy">Prepared By</label>
+        <input type="text" id="preparedBy" placeholder="Name">
+      </div>
+      <div>
+        <label for="approvedBy">Approved By</label>
+        <input type="text" id="approvedBy" placeholder="Name">
+      </div>
+    </div>
+
+    <div class="voucher-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Voucher Line Items</span>
+      <span>
+        <button class="rules-toggle" onclick="loadSelectedIntoLineItems()">↻ Load Ticked Rows</button>
+        &nbsp;|&nbsp;
+        <button class="rules-toggle" onclick="addBlankLineItem()">＋ Add Line</button>
+      </span>
+    </div>
+    <div id="lineItemsWrap">
+      <p class="placeholder">Tick transaction row(s) above and click "Load Ticked Rows", or add a line manually.</p>
+    </div>
+
+    <div class="actions">
+      <button class="gen-btn" style="flex:1;" onclick="generateVoucher()">🧾 Generate Voucher</button>
+    </div>
+
+    <div class="voucher-preview-wrap">
+      <div id="voucherDoc">
+        <p class="placeholder">Tick transaction row(s) above, fill in the details, and click "Generate Voucher" to preview it here.</p>
+      </div>
+    </div>
+
+    <div class="actions" id="voucherActionButtons" style="display:none;">
+      <button class="secondary" onclick="downloadVoucherHtml()">⬇ Download Voucher (HTML)</button>
+      <button onclick="window.print()">🖨 Print / Save as PDF</button>
+    </div>
+  </div>
+
+  <footer>Bank Statement to Excel &mdash; runs entirely in your browser, no files are uploaded to a server. For reference only, not an official accounting record.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+if (window['pdfjsLib']) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+/* ============ Remark categorization rules ============ */
+const DEFAULT_RULES_TEXT = `SALARY = Staff Salary Payment
+RENTAL = Rent Payment
+SAJ = Water Bill (SAJ)
+TNB = Electricity Bill (TNB)
+UNIFI = Internet Bill (Unifi)
+PCB = Income Tax (PCB)
+DIRECTOR ACCOUNT = Director Withdrawal
+VEGETABLE = Vegetable Purchase
+BAN LEE = Vegetable Purchase
+NOODLE = Noodle Purchase
+ENGTINNOODLE = Noodle Purchase
+POULTRY = Poultry (Chicken/Duck) Purchase
+ITEK HOE HUAT = Poultry (Chicken/Duck) Purchase
+SEAFOOD = Seafood Purchase
+FISHERY = Seafood Purchase
+FROZEN FOOD = Frozen Food Purchase
+MARKETING = Marketing Expense
+CAPITAL = Loan / Financing
+REDBUS = Travel Expense
+CDM DEPOSIT = Cash Deposit
+CA CREDIT ADVICE = Merchant / Card Sales Collection
+FUND TRF FR CA TO CA = Internal Transfer
+BALANCE FROM PREVIOUS STATEMENT = Opening Balance
+SUPPLIER = Supplier Payment`;
+
+let activeRules = parseRulesText(DEFAULT_RULES_TEXT);
+
+function parseRulesText(text) {
+  return text.split('\n')
+    .map(line => line.trim())
+    .filter(line => line && line.includes('='))
+    .map(line => {
+      const idx = line.indexOf('=');
+      return { keyword: line.slice(0, idx).trim().toUpperCase(), category: line.slice(idx + 1).trim() };
+    })
+    .filter(r => r.keyword && r.category);
+}
+
+function categorize(description) {
+  const upper = (description || '').toUpperCase();
+  for (const rule of activeRules) {
+    if (upper.includes(rule.keyword)) return rule.category;
+  }
+  return 'Others';
+}
+
+document.getElementById('rulesText').value = DEFAULT_RULES_TEXT;
+
+function toggleRules() {
+  document.getElementById('rulesPanel').classList.toggle('open');
+}
+
+function resetRules() {
+  document.getElementById('rulesText').value = DEFAULT_RULES_TEXT;
+}
+
+function reapplyRules() {
+  activeRules = parseRulesText(document.getElementById('rulesText').value);
+  transactions.forEach(t => { t.remark = categorize(t.description); });
+  renderTable();
+  setStatus('✔ Remarks re-applied to all rows.', 'ok');
+}
+
+/* ============ Upload handling ============ */
+const uploadBox = document.getElementById('uploadBox');
+const fileInput = document.getElementById('fileInput');
+const fileNameTag = document.getElementById('fileNameTag');
+const statusArea = document.getElementById('statusArea');
+const summaryStrip = document.getElementById('summaryStrip');
+const tableWrap = document.getElementById('tableWrap');
+const reviewActions = document.getElementById('reviewActions');
+
+let transactions = []; // {date, description, deposit, withdrawal, balance, remark}
+let sourceFileBase = 'bank_statement';
+const selectedRows = new Set();
+const voucherCard = document.getElementById('voucherCard');
+const selectHint = document.getElementById('selectHint');
+
+uploadBox.addEventListener('click', () => fileInput.click());
+uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); uploadBox.classList.add('dragover'); });
+uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
+uploadBox.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadBox.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    fileInput.files = e.dataTransfer.files;
+    handleFile(e.dataTransfer.files[0]);
+  }
+});
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function setStatus(msg, type) {
+  statusArea.innerHTML = msg ? `<p class="status ${type || ''}">${msg}</p>` : '';
+}
+
+function handleFile(file) {
+  if (!/\.pdf$/i.test(file.name)) {
+    setStatus('Please upload a .pdf file.', 'err');
+    return;
+  }
+  fileNameTag.innerHTML = `<span class="file-name-tag">📄 ${file.name}</span>`;
+  sourceFileBase = file.name.replace(/\.pdf$/i, '');
+  setStatus('Extracting text and parsing transactions&hellip;', '');
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const parsed = await extractTransactions(new Uint8Array(e.target.result));
+      if (!parsed.length) {
+        setStatus('No transactions could be detected in this PDF. It may be a scanned/image-only statement, or use a layout this tool does not recognise yet.', 'err');
+        return;
+      }
+      transactions = parsed.map(t => ({ ...t, remark: categorize(t.description) }));
+      selectedRows.clear();
+      renderTable();
+      renderSummary();
+      reviewActions.style.display = 'flex';
+      selectHint.style.display = 'block';
+      voucherCard.style.display = 'block';
+      setStatus(`✔ Extracted ${transactions.length} transaction row(s). Review below before exporting.`, 'ok');
+    } catch (err) {
+      setStatus('Error reading PDF: ' + err.message, 'err');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ============ PDF parsing ============ */
+// Bank statement money amount pattern, e.g. 1,234.56 or 21,866.10
+const MONEY_RE = /-?\d{1,3}(?:,\d{3})*\.\d{2}/g;
+const DATE_RE = /^(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/;
+
+async function extractTransactions(data) {
+  if (!window['pdfjsLib']) throw new Error('PDF engine failed to load.');
+  const pdf = await pdfjsLib.getDocument({ data }).promise;
+
+  const allRows = []; // rows across all pages: {y, items:[{x,str}]}
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const rowsMap = new Map();
+    content.items.forEach(item => {
+      const x = item.transform[4];
+      const y = Math.round(item.transform[5]);
+      if (!item.str || !item.str.trim()) return;
+      const key = y;
+      if (!rowsMap.has(key)) rowsMap.set(key, []);
+      rowsMap.get(key).push({ x, str: item.str });
+    });
+    // merge rows with very close y (within 2px) to handle rounding jitter
+    const ys = Array.from(rowsMap.keys()).sort((a, b) => b - a);
+    const merged = [];
+    let bucket = null;
+    ys.forEach(y => {
+      if (bucket && Math.abs(bucket.y - y) <= 2) {
+        bucket.items.push(...rowsMap.get(y));
+        bucket.y = (bucket.y + y) / 2;
+      } else {
+        bucket = { y, items: [...rowsMap.get(y)] };
+        merged.push(bucket);
+      }
+    });
+    merged.forEach(row => {
+      row.items.sort((a, b) => a.x - b.x);
+      allRows.push(row);
+    });
+  }
+
+  // Find column x-centers from header row(s) containing Deposit/Withdrawal/Balance labels
+  let depositX = null, withdrawalX = null, balanceX = null;
+  allRows.forEach(row => {
+    row.items.forEach(it => {
+      const s = it.str.toLowerCase();
+      if (/deposit|simpanan/.test(s) && depositX === null) depositX = it.x;
+      if (/withdrawal|pengeluaran/.test(s) && withdrawalX === null) withdrawalX = it.x;
+      if (/balance|baki/.test(s) && balanceX === null) balanceX = it.x;
+    });
+  });
+
+  const rowsText = allRows.map(row => ({
+    y: row.y,
+    text: row.items.map(i => i.str).join(' ').replace(/\s+/g, ' ').trim(),
+    items: row.items
+  })).filter(r => r.text);
+
+  const transactionsOut = [];
+  let current = null;
+
+  function classifyAmount(x) {
+    const dists = [];
+    if (depositX !== null) dists.push(['deposit', Math.abs(x - depositX)]);
+    if (withdrawalX !== null) dists.push(['withdrawal', Math.abs(x - withdrawalX)]);
+    if (balanceX !== null) dists.push(['balance', Math.abs(x - balanceX)]);
+    if (!dists.length) return 'withdrawal';
+    dists.sort((a, b) => a[1] - b[1]);
+    return dists[0][0];
+  }
+
+  function flush() {
+    if (current && (current.deposit || current.withdrawal || current.balance)) {
+      transactionsOut.push(current);
+    }
+    current = null;
+  }
+
+  rowsText.forEach(row => {
+    const dateMatch = row.text.match(DATE_RE);
+    if (dateMatch) {
+      flush();
+      current = {
+        date: normalizeDate(dateMatch[1]),
+        description: row.text.slice(dateMatch[1].length).trim(),
+        deposit: '', withdrawal: '', balance: ''
+      };
+      applyAmounts(current, row, classifyAmount);
+    } else if (current) {
+      // continuation line: skip pure header/footer noise, keep as description unless it only has amounts
+      const hadAmounts = applyAmounts(current, row, classifyAmount);
+      const textWithoutAmounts = row.text.replace(MONEY_RE, '').trim();
+      if (textWithoutAmounts && !/^(date|tarikh|transaction|deskripsi|deposit|simpanan|withdrawal|pengeluaran|balance|baki)/i.test(textWithoutAmounts)) {
+        current.description += (current.description ? ' | ' : '') + textWithoutAmounts;
+      }
+    }
+  });
+  flush();
+
+  return transactionsOut.filter(t => t.description || t.deposit || t.withdrawal);
+}
+
+function applyAmounts(tx, row, classifyAmount) {
+  let found = false;
+  row.items.forEach(it => {
+    const matches = it.str.match(MONEY_RE);
+    if (!matches) return;
+    matches.forEach(() => {
+      const col = classifyAmount(it.x);
+      const val = it.str.replace(/[^0-9.\-]/g, '');
+      if (val && !isNaN(parseFloat(val))) {
+        found = true;
+        if (col === 'deposit' && !tx.deposit) tx.deposit = val;
+        else if (col === 'withdrawal' && !tx.withdrawal) tx.withdrawal = val;
+        else if (col === 'balance' && !tx.balance) tx.balance = val;
+      }
+    });
+  });
+  return found;
+}
+
+function normalizeDate(raw) {
+  const parts = raw.split(/[-\/]/);
+  if (parts.length !== 3) return raw;
+  let [d, m, y] = parts;
+  if (y.length === 2) y = (parseInt(y, 10) > 50 ? '19' : '20') + y;
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
+
+/* ============ Table rendering ============ */
+function renderTable() {
+  if (!transactions.length) {
+    tableWrap.innerHTML = '<p class="placeholder">Upload a PDF above to extract its transactions here.</p>';
+    return;
+  }
+  let html = `<div class="table-wrap"><table class="tx-table"><thead><tr>
+    <th style="width:34px;">☑</th>
+    <th style="width:110px;">Date</th>
+    <th>Description</th>
+    <th class="num" style="width:110px;">Deposit</th>
+    <th class="num" style="width:110px;">Withdrawal</th>
+    <th class="num" style="width:110px;">Balance</th>
+    <th style="width:210px;">Remark</th>
+    <th style="width:36px;"></th>
+  </tr></thead><tbody>`;
+
+  transactions.forEach((t, i) => {
+    const checked = selectedRows.has(i) ? 'checked' : '';
+    html += `<tr>
+      <td class="sel-cell"><input type="checkbox" ${checked} onchange="toggleSelect(${i}, this.checked)"></td>
+      <td><input type="text" value="${escAttr(t.date)}" onchange="updateField(${i},'date',this.value)"></td>
+      <td><input type="text" value="${escAttr(t.description)}" onchange="updateField(${i},'description',this.value)"></td>
+      <td class="num"><input type="text" value="${escAttr(t.deposit)}" onchange="updateField(${i},'deposit',this.value)"></td>
+      <td class="num"><input type="text" value="${escAttr(t.withdrawal)}" onchange="updateField(${i},'withdrawal',this.value)"></td>
+      <td class="num"><input type="text" value="${escAttr(t.balance)}" onchange="updateField(${i},'balance',this.value)"></td>
+      <td class="remark-cell"><input type="text" value="${escAttr(t.remark)}" onchange="updateField(${i},'remark',this.value)"></td>
+      <td><button class="row-remove" title="Remove row" onclick="removeRow(${i})">✕</button></td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  tableWrap.innerHTML = html;
+}
+
+function escAttr(v) {
+  return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+function updateField(i, field, value) {
+  transactions[i][field] = value;
+  if (field === 'description') {
+    transactions[i].remark = categorize(value);
+    renderTable();
+  }
+  renderSummary();
+}
+
+function removeRow(i) {
+  transactions.splice(i, 1);
+  const reindexed = new Set();
+  selectedRows.forEach(idx => {
+    if (idx < i) reindexed.add(idx);
+    else if (idx > i) reindexed.add(idx - 1);
+  });
+  selectedRows.clear();
+  reindexed.forEach(idx => selectedRows.add(idx));
+  renderTable();
+  renderSummary();
+}
+
+function toggleSelect(i, checked) {
+  if (checked) selectedRows.add(i);
+  else selectedRows.delete(i);
+}
+
+function addBlankRow() {
+  transactions.push({ date: '', description: '', deposit: '', withdrawal: '', balance: '', remark: 'Others' });
+  renderTable();
+  renderSummary();
+}
+
+function renderSummary() {
+  if (!transactions.length) { summaryStrip.style.display = 'none'; return; }
+  const totalDeposit = transactions.reduce((s, t) => s + (parseFloat(t.deposit) || 0), 0);
+  const totalWithdrawal = transactions.reduce((s, t) => s + (parseFloat(t.withdrawal) || 0), 0);
+  const lastBalance = [...transactions].reverse().find(t => t.balance)?.balance || '';
+  summaryStrip.style.display = 'grid';
+  summaryStrip.innerHTML = `
+    <div class="stat-box"><div class="num">${transactions.length}</div><div class="lbl">Transactions</div></div>
+    <div class="stat-box"><div class="num">RM ${totalDeposit.toLocaleString('en-MY', {minimumFractionDigits:2})}</div><div class="lbl">Total Deposit</div></div>
+    <div class="stat-box"><div class="num">RM ${totalWithdrawal.toLocaleString('en-MY', {minimumFractionDigits:2})}</div><div class="lbl">Total Withdrawal</div></div>
+    <div class="stat-box"><div class="num">RM ${lastBalance ? parseFloat(lastBalance).toLocaleString('en-MY', {minimumFractionDigits:2}) : '-'}</div><div class="lbl">Last Balance</div></div>
+  `;
+}
+
+/* ============ Export ============ */
+function buildExportRows() {
+  return transactions.map(t => ({
+    'Date': t.date,
+    'Description': t.description,
+    'Deposit (RM)': t.deposit ? parseFloat(t.deposit) : '',
+    'Withdrawal (RM)': t.withdrawal ? parseFloat(t.withdrawal) : '',
+    'Balance (RM)': t.balance ? parseFloat(t.balance) : '',
+    'Remark (Auto)': t.remark
+  }));
+}
+
+function downloadExcel() {
+  if (!transactions.length) return;
+  const rows = buildExportRows();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:12},{wch:55},{wch:13},{wch:14},{wch:13},{wch:30}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Bank Statement');
+  XLSX.writeFile(wb, `${sourceFileBase}_Extracted.xlsx`);
+}
+
+/* ============ Save to Database ============ */
+const apiUrlInput = document.getElementById('apiUrlInput');
+const dbStatusArea = document.getElementById('dbStatusArea');
+
+try {
+  const savedApiUrl = localStorage.getItem('bankStatementApiUrl');
+  if (savedApiUrl) apiUrlInput.value = savedApiUrl;
+} catch (e) { /* localStorage unavailable, ignore */ }
+
+apiUrlInput.addEventListener('change', () => {
+  try { localStorage.setItem('bankStatementApiUrl', apiUrlInput.value.trim()); } catch (e) {}
+});
+
+function setDbStatus(msg, type) {
+  dbStatusArea.innerHTML = msg ? `<p class="status ${type || ''}">${msg}</p>` : '';
+}
+
+async function saveTicked() {
+  const rows = Array.from(selectedRows).sort((a, b) => a - b).map(i => transactions[i]).filter(Boolean);
+  if (!rows.length) {
+    setDbStatus('Tick at least one transaction row above first.', 'err');
+    return;
+  }
+  await saveRowsToDb(rows);
+}
+
+async function saveAllRows() {
+  if (!transactions.length) {
+    setDbStatus('No transactions to save yet — upload a PDF first.', 'err');
+    return;
+  }
+  await saveRowsToDb(transactions);
+}
+
+async function saveRowsToDb(rows) {
+  const apiUrl = apiUrlInput.value.trim().replace(/\/+$/, '');
+  if (!apiUrl) {
+    setDbStatus('Please paste your Railway API URL first.', 'err');
+    return;
+  }
+  const payload = { rows: rows.map(r => ({ date: r.date, description: r.description })) };
+  setDbStatus(`Saving ${rows.length} row(s)&hellip;`, '');
+  try {
+    const res = await fetch(`${apiUrl}/api/transactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || errBody.detail || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    setDbStatus(`✔ Saved ${data.inserted != null ? data.inserted : rows.length} row(s) to the database.`, 'ok');
+  } catch (err) {
+    setDbStatus(`Error saving to database: ${err.message}. Check the API URL, and that the Railway service is deployed and CORS-allowed for this site.`, 'err');
+  }
+}
+
+/* ============ Payment Voucher: Line Items ============ */
+let voucherLineItems = []; // {source, itemDescription, qty, amount, remark}
+const lineItemsWrap = document.getElementById('lineItemsWrap');
+
+function loadSelectedIntoLineItems() {
+  const rows = Array.from(selectedRows).sort((a, b) => a - b).map(i => transactions[i]).filter(Boolean);
+  if (!rows.length) {
+    setStatus('Tick at least one transaction row above first.', 'err');
+    return;
+  }
+  voucherLineItems = rows.map(t => ({
+    source: `${t.date} — ${t.description}`,
+    itemDescription: t.remark && t.remark !== 'Others' ? t.remark : t.description,
+    qty: 1,
+    amount: parseFloat(t.withdrawal) || parseFloat(t.deposit) || 0,
+    remark: t.remark || ''
+  }));
+  renderLineItems();
+}
+
+function addBlankLineItem() {
+  voucherLineItems.push({ source: '(manual line)', itemDescription: '', qty: 1, amount: 0, remark: '' });
+  renderLineItems();
+}
+
+function removeLineItem(i) {
+  voucherLineItems.splice(i, 1);
+  renderLineItems();
+}
+
+function updateLineItem(i, field, value) {
+  if (field === 'qty' || field === 'amount') {
+    voucherLineItems[i][field] = parseFloat(value) || 0;
+  } else {
+    voucherLineItems[i][field] = value;
+  }
+  renderLineItems();
+}
+
+function renderLineItems() {
+  if (!voucherLineItems.length) {
+    lineItemsWrap.innerHTML = '<p class="placeholder">Tick transaction row(s) above and click "Load Ticked Rows", or add a line manually.</p>';
+    return;
+  }
+  const total = voucherLineItems.reduce((s, li) => s + (li.qty || 1) * (li.amount || 0), 0);
+  let html = `<table class="li-table"><thead><tr>
+    <th style="width:26%;">Item Description</th>
+    <th class="num" style="width:8%;">Qty</th>
+    <th class="num" style="width:14%;">Unit Amount (RM)</th>
+    <th style="width:26%;">Remark</th>
+    <th class="num" style="width:14%;">Line Total (RM)</th>
+    <th style="width:30px;"></th>
+  </tr></thead><tbody>`;
+  voucherLineItems.forEach((li, i) => {
+    const lineTotal = (li.qty || 1) * (li.amount || 0);
+    html += `<tr>
+      <td><input type="text" value="${escAttr(li.itemDescription)}" title="${escAttr(li.source)}" onchange="updateLineItem(${i},'itemDescription',this.value)"></td>
+      <td class="num"><input type="number" min="0" step="1" value="${li.qty}" onchange="updateLineItem(${i},'qty',this.value)"></td>
+      <td class="num"><input type="number" min="0" step="0.01" value="${li.amount}" onchange="updateLineItem(${i},'amount',this.value)"></td>
+      <td><input type="text" value="${escAttr(li.remark)}" onchange="updateLineItem(${i},'remark',this.value)"></td>
+      <td class="num">${fmtMoney(lineTotal)}</td>
+      <td><button class="row-remove" title="Remove line" onclick="removeLineItem(${i})">✕</button></td>
+    </tr>`;
+  });
+  html += `</tbody><tfoot><tr><td colspan="4"></td><td class="num">${fmtMoney(total)}</td><td></td></tr></tfoot></table>`;
+  lineItemsWrap.innerHTML = html;
+}
+
+/* ============ Payment Voucher ============ */
+function fmtMoney(n) {
+  return 'RM ' + (parseFloat(n) || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function extractPayeeGuess(desc) {
+  // Bank statement descriptions are typically "REF | PAYEE NAME | more..." — guess the payee segment
+  const parts = (desc || '').split('|').map(p => p.trim()).filter(Boolean);
+  const candidate = parts.find(p => /[A-Za-z]{3,}/.test(p) && !/^(CIB|CA CREDIT|CDM|FUND TRANSFER|FUND TRF)/i.test(p));
+  return candidate || parts[parts.length - 1] || desc || '';
+}
+
+function generateVoucher() {
+  const voucherDoc = document.getElementById('voucherDoc');
+  const voucherActionButtons = document.getElementById('voucherActionButtons');
+
+  if (!voucherLineItems.length) {
+    voucherDoc.innerHTML = '<p class="placeholder" style="color:#dc2626;">Please load ticked transaction row(s) or add a line item first.</p>';
+    voucherActionButtons.style.display = 'none';
+    return;
+  }
+
+  const selRows = Array.from(selectedRows).sort((a, b) => a - b).map(i => transactions[i]).filter(Boolean);
+
+  const companyName = document.getElementById('companyName').value || 'Your Company Sdn Bhd';
+  let payee = document.getElementById('voucherPayee').value.trim();
+  if (!payee && selRows.length) payee = extractPayeeGuess(selRows[selRows.length - 1].description);
+  const purpose = document.getElementById('voucherPurpose').value.trim() || voucherLineItems[0].remark || 'Payment';
+  const voucherDateInput = document.getElementById('voucherDate').value;
+  const voucherDate = voucherDateInput
+    ? new Date(voucherDateInput + 'T00:00:00').toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' })
+    : new Date().toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' });
+  const mode = document.getElementById('voucherMode').value;
+  const preparedBy = document.getElementById('preparedBy').value.trim();
+  const approvedBy = document.getElementById('approvedBy').value.trim();
+
+  const total = voucherLineItems.reduce((s, li) => s + (li.qty || 1) * (li.amount || 0), 0);
+  const isPayment = selRows.length ? selRows.some(r => parseFloat(r.withdrawal) > 0) : true;
+
+  const lineItemsTableHtml = `
+    <table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:6px;">
+      <thead>
+        <tr style="border-bottom:1px solid #e5e7eb;">
+          <th style="text-align:left; padding:5px 4px; color:#6b7280; font-size:0.72rem; text-transform:uppercase;">Item Description</th>
+          <th style="text-align:right; padding:5px 4px; color:#6b7280; font-size:0.72rem; text-transform:uppercase;">Qty</th>
+          <th style="text-align:right; padding:5px 4px; color:#6b7280; font-size:0.72rem; text-transform:uppercase;">Unit (RM)</th>
+          <th style="text-align:left; padding:5px 4px; color:#6b7280; font-size:0.72rem; text-transform:uppercase;">Remark</th>
+          <th style="text-align:right; padding:5px 4px; color:#6b7280; font-size:0.72rem; text-transform:uppercase;">Amount (RM)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${voucherLineItems.map(li => {
+          const lineTotal = (li.qty || 1) * (li.amount || 0);
+          return `<tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:6px 4px;">${escAttr(li.itemDescription)}</td>
+            <td style="padding:6px 4px; text-align:right;">${li.qty || 1}</td>
+            <td style="padding:6px 4px; text-align:right;">${(li.amount || 0).toLocaleString('en-MY', {minimumFractionDigits:2})}</td>
+            <td style="padding:6px 4px; color:#6b7280;">${escAttr(li.remark)}</td>
+            <td style="padding:6px 4px; text-align:right; font-weight:600;">${lineTotal.toLocaleString('en-MY', {minimumFractionDigits:2})}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+
+  const today = new Date().toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const bodyHtml = `
+    <div class="voucher-header">
+      <h2>${escAttr(companyName)}</h2>
+      <div class="period">${isPayment ? 'Payment Voucher' : 'Receipt Voucher'} &mdash; ${escAttr(voucherDate)}</div>
+    </div>
+
+    <div class="voucher-meta">
+      <div><span class="lbl">Payee:</span> <strong>${escAttr(payee)}</strong></div>
+      <div><span class="lbl">Voucher Date:</span> ${escAttr(voucherDate)}</div>
+      <div><span class="lbl">Purpose:</span> ${escAttr(purpose)}</div>
+      <div><span class="lbl">Payment Mode:</span> ${escAttr(mode)}</div>
+    </div>
+
+    <div class="voucher-section-title">${isPayment ? 'Payment Details' : 'Receipt Details'} (${voucherLineItems.length} item${voucherLineItems.length > 1 ? 's' : ''})</div>
+    ${lineItemsTableHtml}
+
+    <div class="voucher-total">
+      <span>Total ${isPayment ? 'Amount Paid' : 'Amount Received'}</span>
+      <span>${fmtMoney(total)}</span>
+    </div>
+
+    <div class="voucher-sign-row">
+      <div class="voucher-sign-box"><div class="line">${escAttr(preparedBy) || '&nbsp;'}</div>Prepared By</div>
+      <div class="voucher-sign-box"><div class="line">${escAttr(approvedBy) || '&nbsp;'}</div>Approved By</div>
+      <div class="voucher-sign-box"><div class="line">&nbsp;</div>Received By</div>
+    </div>
+
+    <div class="voucher-footer">
+      This is a computer-generated document based on bank statement transaction(s) extracted on ${today}.<br>
+      For reference only, not an official accounting record.
+    </div>
+  `;
+
+  voucherDoc.innerHTML = bodyHtml;
+  voucherActionButtons.style.display = 'flex';
+  window._currentVoucherHtml = bodyHtml;
+  window._currentVoucherName = payee.replace(/[^a-z0-9]/gi, '_') || 'voucher';
+}
+
+function downloadVoucherHtml() {
+  if (!window._currentVoucherHtml) return;
+  const fullHtml = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Payment Voucher</title>
+<style>
+body{font-family:'Segoe UI',Roboto,Arial,sans-serif;background:#f4f6fb;padding:24px;}
+#voucherDoc{background:#fff;max-width:620px;margin:0 auto;padding:32px 36px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08);font-size:0.88rem;color:#1f2937;}
+.voucher-header{text-align:center;border-bottom:2px solid #2563eb;padding-bottom:14px;margin-bottom:18px;}
+.voucher-header h2{margin:0 0 4px 0;font-size:1.3rem;color:#1d4ed8;}
+.voucher-header .period{color:#6b7280;font-size:0.85rem;}
+.voucher-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:18px;font-size:0.85rem;}
+.voucher-meta div span.lbl{color:#6b7280;display:inline-block;min-width:100px;}
+.voucher-section-title{font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.03em;color:#1d4ed8;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin:16px 0 8px 0;}
+.voucher-row{display:flex;justify-content:space-between;padding:5px 0;font-size:0.87rem;gap:12px;}
+.voucher-row .v-label{color:#374151;}
+.voucher-row .v-value{font-weight:600;white-space:nowrap;}
+.voucher-total{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:2px solid #1f2937;font-size:1.05rem;font-weight:800;color:#dc2626;}
+.voucher-sign-row{display:flex;justify-content:space-between;margin-top:34px;gap:20px;}
+.voucher-sign-box{flex:1;text-align:center;font-size:0.8rem;color:#6b7280;}
+.voucher-sign-box .line{border-top:1px solid #9ca3af;margin-bottom:6px;padding-top:26px;}
+.voucher-footer{margin-top:24px;padding-top:14px;border-top:1px dashed #e5e7eb;font-size:0.72rem;color:#6b7280;text-align:center;}
+</style></head><body><div id="voucherDoc">${window._currentVoucherHtml}</div></body></html>`;
+
+  const blob = new Blob([fullHtml], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Payment_Voucher_${window._currentVoucherName}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function downloadCsv() {
+  if (!transactions.length) return;
+  const rows = buildExportRows();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const csv = XLSX.utils.sheet_to_csv(ws);
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${sourceFileBase}_Extracted.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
